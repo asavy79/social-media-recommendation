@@ -1,3 +1,4 @@
+import numpy as np
 import networkx as nx
 
 def get_top_accounts_pagerank(graph: nx.Graph) -> list[tuple[str, float]]:
@@ -16,9 +17,24 @@ def find_accounts_within_degree(graph: nx.Graph, account_id: str, n: int) -> lis
     return accounts_within_2
 
 
-def find_nearest_neighbors(account_id: str) -> None:
-    """
-    This will use the cosine similarity of the feature vectors to find the nearest neigbhors.
-    Look in data/ego_accounts files that end in .featnames and .feat to fully understand the data
-    """
-    pass
+def find_nearest_neighbors(features: dict[str, np.ndarray], account_id: str, top_n: int = 5) -> list[tuple[str, float]]:
+    if account_id not in features:
+        return []
+
+    target = features[account_id]
+    target_norm = np.linalg.norm(target)
+
+    scores = []
+    for uid, vec in features.items():
+        if uid == account_id:
+            continue
+        if vec.shape != target.shape:
+            continue
+        denom = target_norm * np.linalg.norm(vec)
+        if denom == 0:
+            continue
+        similarity = float(np.dot(target, vec) / denom)
+        scores.append((uid, similarity))
+
+    scores.sort(key=lambda x: x[1], reverse=True)
+    return scores[:top_n]
