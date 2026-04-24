@@ -8,9 +8,20 @@ EGO_ACCOUNTS_DIR = "data/ego_accounts"
 ACCOUNT_IDS = ["0", "107", "348", "414", "686", "698", "1684", "1912", "3437", "3980"]
 
 
-if __name__ == "__main__":
-    G = nx.read_edgelist(GRAPH_FILE, create_using=nx.Graph())
-    features, vocab = load_global_features(EGO_ACCOUNTS_DIR)
+#Code verifying that user has the correct data; just incase it's not working properly
+def main() -> int:
+    graph_path, ego_dir = find_data_paths()
+
+    if not Path(graph_path).exists():
+        print(f"Required graph file not found: {graph_path}")
+        return 2
+
+    if not Path(ego_dir).exists():
+        print(f"Required ego accounts directory not found: {ego_dir}")
+        return 2
+
+    G = nx.read_edgelist(graph_path, create_using=nx.Graph())
+    features, vocab = load_global_features(ego_dir)
 
     target = input(f"Enter a target account ID ({', '.join(ACCOUNT_IDS)}): ")
     if target not in ACCOUNT_IDS:
@@ -25,4 +36,10 @@ if __name__ == "__main__":
     recommended = recommend_accounts(G, features, target, top_n=10)
     for uid, score, ppr, cosine in recommended:
         print(f"  {uid:>6}  {score:>8.4f}  {ppr:>10.6f}  {cosine:>8.4f}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 

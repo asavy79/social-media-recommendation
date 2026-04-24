@@ -75,25 +75,40 @@ def recommend_accounts(
 
     # We will exclude the neighbors, as they are already friends of the ego account.
     excluded = set(graph.neighbors(account_id)) | {account_id}
-    candidates = [n for n in reachable if n not in excluded]
+    candidates = [n for n in reachable.keys() if n not in excluded]
     if not candidates:
         return []
 
-    ppr_vals = np.array([ppr.get(n, 0.0) for n in candidates])
+    # Normalizing in between 0 and 1
+    def _minmax_norm(arr: np.ndarray) -> np.ndarray:
+        if arr.size == 0:
+            return arr
+        mn = arr.min()
+        mx = arr.max()
+        if np.isclose(mx, mn):
+            return np.zeros_like(arr, dtype=float)
+        return (arr - mn) / (mx - mn)
 
+    # PR scores
+    ppr_vals = np.array([float(ppr.get(n, 0.0)) for n in candidates], dtype=float)
+    ppr_norm = _minmax_norm(ppr_vals)
+
+    # Cosine similarity: if target has no features, treat all cosines as 0
     target_vec = features.get(account_id)
-    if target_vec is None:
+    if target_vec is None or np.linalg.norm(target_vec) == 0:
         cos_vals = np.zeros(len(candidates))
     else:
-        cos_vals = np.array([
-            _cosine(target_vec, features[n]) if n in features else 0.0
-            for n in candidates
-        ])
+        cos_list = []
+        for n in candidates:
+            vec = features.get(n)
+            if vec is None:
+                cos_list.append(0.0)
+            else:
+                cos_list.append(_cosine(target_vec, vec))
+        cos_vals = np.array(cos_list)
 
-    # We normalize the PageRank and cosine similarity scores, as their scales are very different.
-    ppr_max = ppr_vals.max()
-    ppr_norm = ppr_vals / ppr_max if ppr_max > 0 else ppr_vals
-    cos_norm = (cos_vals + 1.0) / 2.0
+    # map cos from [-1,1] to [0,1]
+    cos_norm = _minmax_norm((cos_vals + 1.0) / 2.0)
 
     combined = alpha * ppr_norm + (1.0 - alpha) * cos_norm
 
@@ -101,5 +116,5 @@ def recommend_accounts(
         (candidates[i], float(combined[i]), float(ppr_vals[i]), float(cos_vals[i]))
         for i in range(len(candidates))
     ]
-    results.sort(key=lambda r: r[1], reverse=True)
+    results.sort(key=lambda r: (r[1], r[2]), reverse=True)
     return results[:top_n]
