@@ -1,5 +1,7 @@
 import numpy as np
 import os
+import random
+import networkx as nx
 
 
 def get_edgelist(filename: str) -> list[tuple[int, int]]:
@@ -9,6 +11,41 @@ def get_edgelist(filename: str) -> list[tuple[int, int]]:
             a, b = line.strip().split()
             edges.append((int(a), int(b)))
     return edges
+
+
+def hide_user_edges(G: nx.Graph, target_node: str, p: float = 0.2, rng: random.Random | None = None):
+    """
+    Hides a percentage of edges for a specific node.
+    Returns the modified graph and the list of hidden edges (ground truth).
+
+    Pass an `rng` (a seeded `random.Random` instance) to make the sampling reproducible.
+    """
+    edges = list(G.edges(target_node))
+
+    num_to_hide = int(len(edges) * p)
+
+    sampler = rng if rng is not None else random
+    hidden_edges = sampler.sample(edges, num_to_hide)
+
+    G_train = G.copy()
+    G_train.remove_edges_from(hidden_edges)
+
+    return G_train, hidden_edges
+
+
+def load_graph(combined_edges_path: str) -> nx.Graph:
+    """
+    Loads the full undirected graph from a combined edge list (e.g. `facebook_combined.txt`).
+    Node IDs are kept as strings so they line up with the keys produced by `load_global_features`.
+    """
+    G = nx.Graph()
+    with open(combined_edges_path) as f:
+        for line in f:
+            parts = line.strip().split()
+            if len(parts) < 2:
+                continue
+            G.add_edge(parts[0], parts[1])
+    return G
 
 
 def _read_featnames(path: str) -> list[str]:

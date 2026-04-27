@@ -50,6 +50,13 @@ def find_nearest_neighbors(features: dict[str, np.ndarray], account_id: str, top
     scores.sort(key=lambda x: x[1], reverse=True)
     return scores[:top_n]
 
+def predict_accounts(graph: nx.Graph, features: dict[str, np.ndarray], account_id: str, top_n: int=10, alpha: float=0.5):
+    if account_id not in graph:
+        return []
+
+    ppr = nx.pagerank(graph, alpha=0.85, personalization={account_id: 1.0})
+    
+
 
 def recommend_accounts(
     graph: nx.Graph,
