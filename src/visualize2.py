@@ -55,16 +55,15 @@ def plot_precision_recall(rows: list[dict], top_n_list: list[int]) -> None:
     plt.close()
 
 
-def plot_network(G: nx.Graph, features: dict, user: str) -> None:
+def plot_network(G: nx.Graph, features: dict, user: str, alpha: float = 0.5, top_n: int = 10, filename: str = "network_graph.png") -> None:
     rng = random.Random(SEED)
     G_train, hidden_edges = hide_user_edges(G, user, p=P_HIDE, rng=rng)
     hidden_friends = {v for (_, v) in hidden_edges}
 
-    recs = recommend_accounts(G_train, features, user, top_n=10, alpha=0.5)
+    recs = recommend_accounts(G_train, features, user, top_n=top_n, alpha=alpha)
     rec_ids = {r[0] for r in recs}
 
     direct_friends = set(G.neighbors(user))
-    visible_friends = direct_friends - hidden_friends
 
     nodes_to_show = {user} | direct_friends | rec_ids
     subgraph = G.subgraph(nodes_to_show)
@@ -105,13 +104,13 @@ def plot_network(G: nx.Graph, features: dict, user: str) -> None:
         mpatches.Patch(color="#95a5a6", label="Visible friend"),
     ]
     plt.legend(handles=legend, loc="upper left", fontsize=8)
-    plt.title(f"Friend Recommendation Network for User {user}\n(alpha=0.5, top-10 recommendations)")
+    plt.title(f"Friend Recommendation Network for User {user}\n(alpha={alpha}, top-{top_n} recommendations)")
     # Visualizes the friend network around the target user. Hidden friends are colored
     # green if correctly recommended, orange if missed. Purple nodes are false positives.
     plt.axis("off")
     plt.tight_layout()
 
-    out = os.path.join(PLOTS_DIR, "network_graph.png")
+    out = os.path.join(PLOTS_DIR, filename)
     plt.savefig(out, dpi=150)
     print(f"Saved: {out}")
     plt.close()
@@ -133,7 +132,10 @@ if __name__ == "__main__":
     rows = evaluate_users(G, features, ego_users, P_HIDE, TOP_N_LIST, ALPHAS, SEED)
     plot_precision_recall(rows, TOP_N_LIST)
 
-    print(f"Building network graph for user {TARGET_USER}...")
-    plot_network(G, features, TARGET_USER)
+    print(f"Building network graph for user {TARGET_USER} (alpha=0.5, top-10)...")
+    plot_network(G, features, TARGET_USER, alpha=0.5, top_n=10, filename="network_graph_alpha05.png")
+
+    print(f"Building network graph for user {TARGET_USER} (alpha=1.0, top-20)...")
+    plot_network(G, features, TARGET_USER, alpha=1.0, top_n=20, filename="network_graph_alpha10.png")
 
     print("Done.")
