@@ -2,6 +2,9 @@
 
 This document provides a technical breakdown of the Stanford SNAP ego-Facebook dataset. It explains how to interpret the graph structure, anonymized metadata, and social groupings for building recommendation engines.
 
+## 0. Installing dependencies:
+ On a new virtual enviorment, run pip install -r requirements.txt. This will install the necessary libraries to run the code and display outputs
+
 ---
 
 ## 1. The Global Graph (`facebook_combined.txt`)
