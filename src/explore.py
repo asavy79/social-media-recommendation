@@ -2,6 +2,11 @@ import networkx as nx
 from parser import load_global_features
 from metrics import recommend_accounts
 from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+from collections import Counter
+from Visualize import visualize_graph, show_most_common_traits
+import pandas as pd
 
 GRAPH_FILE = "data/facebook_combined.txt"
 EGO_ACCOUNTS_DIR = "data/ego_accounts"
@@ -36,6 +41,8 @@ def main() -> int:
     print(f"\nTop account recommendations for user {target}:")
     print(f"  {'id':>6}  {'score':>8}  {'ppr':>10}  {'cosine':>8}")
     recommended = recommend_accounts(G, features, target, top_n=10)
+    show_most_common_traits(features, vocab, recommended, target,6)
+    visualize_graph(G, recommended, target)
     for uid, score, ppr, cosine in recommended:
         print(f"  {uid:>6}  {score:>8.4f}  {ppr:>10.6f}  {cosine:>8.4f}")
 
